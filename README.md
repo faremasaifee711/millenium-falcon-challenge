@@ -236,4 +236,7 @@ either in the backend or frontend. Choose whichever you think is best suited for
 
 We are looking for high quality code: typically something that you would put into production and be proud of.
 
+By the way, we know you might be going to use AI, and that's a good thing. However, we ask that you mention in your submission what tool you used to help you and why.
+
+
 Have fun!
