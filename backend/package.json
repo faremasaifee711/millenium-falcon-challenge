@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "DATA_DIR=\"/Users/fatemasaifee/Documents/Coding Practice/millenium-falcon-challenge/examples/example3\" ts-node src/server.ts",
+    "universe-query": "ts-node src/db/universeQuery.ts"
   },
   "keywords": [],
   "author": "",
