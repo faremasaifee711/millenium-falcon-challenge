@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileUpload } from './components/FileUpload';
+import { FileUpload } from '../components/FileUpload';
 
 function App() {
   const [odds, setOdds] = useState<number | null>(null);

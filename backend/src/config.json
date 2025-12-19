@@ -1,6 +1,0 @@
-{
-    "autonomy": 6,
-    "routes_db": "./routes.db",
-    "start": "Tatooine",
-    "destination": "Endor"
-  }
