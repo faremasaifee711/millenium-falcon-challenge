@@ -6,7 +6,7 @@ import { Route } from "./models/routes";
 import { paths, DATA_DIR } from "./config/config";
 import { getFalconData, getEmpireData, getAnswerData } from "./services/jsonService";
 import { addRoutesDataToDB } from "./services/universeService";
-import { findAllPaths } from "./services/oddsCalculator";
+import { calculateFinalProbability } from "./services/oddsCalculator";
 
 // -------------------- INIT --------------------
 const routes : Route[] = addRoutesDataToDB();
@@ -19,7 +19,7 @@ console.log(getFalconData());
 console.log(getEmpireData());
 console.log(getAnswerData());
 
-console.log(findAllPaths(routes, getFalconData()?.departure, getFalconData()?.arrival))
+console.log(calculateFinalProbability(routes, getFalconData(), getEmpireData() ));
 
 // Endpoint: get all routes
 app.get("/routes", (req, res) => {

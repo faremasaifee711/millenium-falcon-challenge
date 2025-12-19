@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "DATA_DIR=\"/Users/fatemasaifee/Documents/Coding Practice/millenium-falcon-challenge/examples/example3\" ts-node src/server.ts",
-    "universe-query": "ts-node src/db/universeQuery.ts"
+    "start": "DATA_DIR=\"/Users/fatemasaifee/Documents/Coding Practice/millenium-falcon-challenge/examples/example2\" ts-node src/server.ts",
+    "universe-query": "ts-node src/db/universeQuery.ts",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +22,10 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

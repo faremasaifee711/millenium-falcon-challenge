@@ -1,4 +1,5 @@
 import { Route } from "../models/routes";
+import { simulatePathWithBountyRules } from "./simulation";
 
 type Graph = Record<
     string,
@@ -48,7 +49,7 @@ interface PathResult {
     totalTime: number;
   }
   
-export function findAllPaths(
+function findAllPaths(
     routes: Route[],
     start: string,
     end: string
@@ -87,11 +88,25 @@ export function findAllPaths(
     
     dfs(start, new Set([start]), [start], 0);
     return results;
-  }
+}
   
+
+
 interface BountyHunter {
     planet: string;
     day: number;
+}
+
+interface FalconData {
+    autonomy: number,
+    departure: string,
+    arrival: string,
+    routes_db: string
+}
+
+interface EmpireData {
+    countdown: number,
+    bounty_hunters: BountyHunter[]
 }
 
 // This makes lookup O(1).
@@ -107,52 +122,29 @@ function indexBountyHunters(bountyHunters: BountyHunter[]) {
   
     return map;
 }
+  
 
-// We assume travel time is cumulative and arrival at each node happens at an integer day.
-function simulatePath(
-    path: string[],
-    totalTime: number,
-    bountyIndex: Map<string, Set<number>>,
-    countdown: number
-  ): number {
-    if (totalTime > countdown) return 0; // impossible path
-  
-    let encounters = 0;
-    let currentDay = 0;
-  
-    for (let i = 1; i < path.length; i++) {
-      currentDay += 1; // arrive at next planet
-  
-      const planet = path[i];
-      const bountyDays = bountyIndex.get(planet);
-  
-      if (bountyDays?.has(currentDay)) {
-        encounters++;
-      }
-    }
-  
-    return Math.pow(0.9, encounters);
-  }
-
-  function calculateSuccessProbability(
-    paths: PathResult[],
-    countdown: number,
-    bountyHunters: BountyHunter[]
-  ): number {
+export function calculateFinalProbability (
+    routes: Route[],
+    falconData: FalconData,
+    empireData: EmpireData
+): number {
+    const paths: PathResult[] = findAllPaths(routes, falconData.departure, falconData.arrival);
+    const bountyHunters = empireData.bounty_hunters;
     const bountyIndex = indexBountyHunters(bountyHunters);
-  
+
     let bestProbability = 0;
-  
+
     for (const p of paths) {
-      const probability = simulatePath(
-        p.path,
-        p.totalTime,
-        bountyIndex,
-        countdown
-      );
-  
-      bestProbability = Math.max(bestProbability, probability);
+        const successProbability = simulatePathWithBountyRules(
+            p.path,
+            falconData.autonomy,
+            empireData.countdown,
+            bountyIndex
+        );
+
+        bestProbability = Math.max(bestProbability, successProbability);
     }
-  
-    return Math.round(bestProbability * 100);
-  }
+
+    return bestProbability * 100;
+}
