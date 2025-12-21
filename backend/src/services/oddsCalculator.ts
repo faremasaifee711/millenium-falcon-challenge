@@ -1,101 +1,10 @@
 import { Route } from "../models/routes";
-import { simulatePathWithBountyRules } from "./simulation";
+import { PathResult, findAllPaths, evaluatePathWithBountyRules } from "./pathEvaluation";
+import { BountyHunter, indexBountyHunters } from "./bountyHunterService"
+import Database from "better-sqlite3";
+import path from "path";
+import fs from "fs";
 
-type Graph = Record<
-    string,
-    { node: string; travel_time: number }[]
->;
-
-function buildGraph(routes?: Route[]): Graph {
-    if (!Array.isArray(routes)) {
-        throw new Error("buildGraph: routes is undefined or not an array");
-    }
-  
-    const graph: Graph = {};
-  
-    routes.forEach(route => {
-        if (!graph[route.origin]) graph[route.origin] = [];
-        if (!graph[route.destination]) graph[route.destination] = [];
-  
-        graph[route.origin].push({ node: route.destination, travel_time: route.travel_time });
-        graph[route.destination].push({ node: route.origin, travel_time: route.travel_time });
-    });
-  
-    return graph;
-}
-
-
-function pathExists(graph: Graph, start: string, end: string): boolean {
-    const visited = new Set<string>();
-  
-    function dfs(node: string): boolean {
-      if (node === end) return true;
-      if (visited.has(node)) return false;
-  
-      visited.add(node);
-  
-      for (const neighbor of graph[node] || []) {
-        if (dfs(neighbor.node)) return true;
-      }
-  
-      return false;
-    }
-  
-    return dfs(start);
-}
-
-interface PathResult {
-    path: string[];
-    totalTime: number;
-  }
-  
-function findAllPaths(
-    routes: Route[],
-    start: string,
-    end: string
-): PathResult[] {
-    const graph : Graph = buildGraph(routes);
-    const results: PathResult[] = [];
-  
-    function dfs(
-        current: string,
-        visited: Set<string>,
-        path: string[],
-        time: number
-    ) {
-        if (current === end) {
-            results.push({ path: [...path], totalTime: time });
-            return;
-        }
-  
-        for (const neighbor of graph[current] || []) {
-            if (!visited.has(neighbor.node)) {
-            visited.add(neighbor.node);
-            path.push(neighbor.node);
-    
-            dfs(
-                neighbor.node,
-                visited,
-                path,
-                time + neighbor.travel_time
-            );
-    
-            path.pop();
-            visited.delete(neighbor.node);
-            }
-        }
-    }
-    
-    dfs(start, new Set([start]), [start], 0);
-    return results;
-}
-  
-
-
-interface BountyHunter {
-    planet: string;
-    day: number;
-}
 
 interface FalconData {
     autonomy: number,
@@ -109,20 +18,47 @@ interface EmpireData {
     bounty_hunters: BountyHunter[]
 }
 
-// This makes lookup O(1).
-function indexBountyHunters(bountyHunters: BountyHunter[]) {
-    const map = new Map<string, Set<number>>();
-  
-    for (const bh of bountyHunters) {
-      if (!map.has(bh.planet)) {
-        map.set(bh.planet, new Set());
-      }
-      map.get(bh.planet)!.add(bh.day);
+export function getRoutesDataFromDB(falconFilePath: string, dbName: string) : Route[] {
+    const falconDir = path.dirname(
+        path.resolve(process.cwd(), falconFilePath)
+    );
+    const dbPath = path.resolve(
+        falconDir,
+        dbName
+    );
+    if (!fs.existsSync(dbPath)) {
+        throw new Error("DB file does not exist");
     }
+    // Connect to the database
+    const inputDb = new Database(dbPath, { verbose: console.log });
   
-    return map;
+    const tables = inputDb.prepare(`SELECT name FROM sqlite_master WHERE type='table';`).all();
+    console.log("Tables in universe.db:", tables);
+
+    // Query a specific table
+    const stmt = inputDb.prepare("SELECT * FROM routes");
+    const rawRows: any[] = stmt.all();
+
+    const routes : Route[] = rawRows.map(row => ({
+        origin: row.origin,       // match your DB column names
+        destination: row.destination,
+        travel_time: row.travel_time
+    }));
+
+    return routes;
 }
-  
+
+export function calculateOdds (
+    falconFilePath: string,
+    falconData: FalconData,
+    empireData: EmpireData
+): number {
+    
+    const routes : Route[] = getRoutesDataFromDB(falconFilePath, falconData.routes_db);
+    console.log(routes);
+
+    return calculateFinalProbability(routes, falconData, empireData);
+}
 
 export function calculateFinalProbability (
     routes: Route[],
@@ -132,18 +68,28 @@ export function calculateFinalProbability (
     const paths: PathResult[] = findAllPaths(routes, falconData.departure, falconData.arrival);
     const bountyHunters = empireData.bounty_hunters;
     const bountyIndex = indexBountyHunters(bountyHunters);
+    
 
     let bestProbability = 0;
 
     for (const p of paths) {
-        const successProbability = simulatePathWithBountyRules(
-            p.path,
-            falconData.autonomy,
-            empireData.countdown,
-            bountyIndex
-        );
 
-        bestProbability = Math.max(bestProbability, successProbability);
+        console.log("current PAth: " + p.path + " - " + p.totalTime);
+        // Don't consider path with total travel time more than encounter
+        if(p.totalTime <= empireData.countdown) {
+        
+            const successProbability = evaluatePathWithBountyRules(
+                p.path,
+                falconData.autonomy,
+                empireData.countdown,
+                bountyIndex,
+                routes
+            );
+        
+            console.log("successProbability" + successProbability);
+
+            bestProbability = Math.max(bestProbability, successProbability);
+        }
     }
 
     return bestProbability * 100;

@@ -1,7 +1,7 @@
-import db from "../db/db";
-import { Route } from "../models/route";
+import { db } from "../db/db";
+import { Route } from "../models/routes";
 
-export function getRoutes(fromPlanet: string, toPlanet: string): Route[] {
+export function getRoutes(fromPlanet: string, toPlanet: string): any[] {
   const stmt = db.prepare(
     `SELECT * FROM routes WHERE origin = ? AND destination = ?`
   );

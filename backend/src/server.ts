@@ -1,15 +1,15 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
-import db from "./db/db";
+import { db } from "./db/db";
 import { Route } from "./models/routes";
 import { paths, DATA_DIR } from "./config/config";
 import { getFalconData, getEmpireData, getAnswerData } from "./services/jsonService";
-import { addRoutesDataToDB } from "./services/universeService";
+import { addDefaultRoutesDataToDB } from "./services/universeService";
 import { calculateFinalProbability } from "./services/oddsCalculator";
 
 // -------------------- INIT --------------------
-const routes : Route[] = addRoutesDataToDB();
+const routes : Route[] = addDefaultRoutesDataToDB();
 
 // -------------------- EXPRESS SERVER --------------------
 const app = express();

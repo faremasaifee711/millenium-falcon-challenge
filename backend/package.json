@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "give-me-the-odds": "dist/cli/giveMeTheOdds.js"
+  },
   "scripts": {
     "start": "DATA_DIR=\"/Users/fatemasaifee/Documents/Coding Practice/millenium-falcon-challenge/examples/example2\" ts-node src/server.ts",
     "universe-query": "ts-node src/db/universeQuery.ts",
-    "test": "jest"
+    "test": "jest",
+    "give-me-the-odds": "npm run build && give-me-the-odds",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
