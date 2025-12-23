@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 
-export const DATA_DIR = process.env.DATA_DIR || path.resolve(__dirname, "../../examples/example1");
+export const DATA_DIR = process.env.DATA_DIR || path.resolve(__dirname, "../../../examples/example1");
 
 export const paths = {
   falconJson: path.join(DATA_DIR, "millennium-falcon.json"),

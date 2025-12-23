@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "DATA_DIR=\"/Users/fatemasaifee/Documents/Coding Practice/millenium-falcon-challenge/examples/example2\" ts-node src/server.ts",
+    "start:dev": "DATA_DIR=\"/Users/fatemasaifee/Documents/Coding Practice/millenium-falcon-challenge/examples/example2\" node --inspect=9229 -r ts-node/register src/server.ts",
     "universe-query": "ts-node src/db/universeQuery.ts",
     "test": "jest",
     "give-me-the-odds": "npm run build && give-me-the-odds",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "jest": "^30.2.0",

@@ -8,3 +8,7 @@
 - Chances of capture:
     - 10% : arrive on planet the day hunters are expected to arrive
     - 10%: : refuels on planet the day hunters are expected to arrive
+
+
+AI usage:
+- create frontend html page using react

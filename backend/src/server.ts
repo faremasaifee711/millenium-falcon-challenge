@@ -1,30 +1,18 @@
 import express from "express";
-import fs from "fs";
-import path from "path";
-import { db } from "./db/db";
-import { Route } from "./models/routes";
-import { paths, DATA_DIR } from "./config/config";
-import { getFalconData, getEmpireData, getAnswerData } from "./services/jsonService";
-import { addDefaultRoutesDataToDB } from "./services/universeService";
-import { calculateFinalProbability } from "./services/oddsCalculator";
+import cors from "cors";
+import { DATA_DIR } from "./config/config";
+import oddsRoutes from "./routes/odds.routes";
 
-// -------------------- INIT --------------------
-const routes : Route[] = addDefaultRoutesDataToDB();
 
 // -------------------- EXPRESS SERVER --------------------
 const app = express();
 app.use(express.json());
 
-console.log(getFalconData());
-console.log(getEmpireData());
-console.log(getAnswerData());
+app.use(cors({
+  origin: 'http://localhost:4173', // frontend app
+}));
 
-console.log(calculateFinalProbability(routes, getFalconData(), getEmpireData() ));
-
-// Endpoint: get all routes
-app.get("/routes", (req, res) => {
-  res.json(routes);
-});
+app.use("/api", oddsRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;

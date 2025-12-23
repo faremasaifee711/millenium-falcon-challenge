@@ -5,7 +5,6 @@ import path from "path";
 import { calculateOdds } from "./../services/oddsCalculator";
 import Database from "better-sqlite3";
 import { Route } from "../models/routes";
-//import { addRoutesDataToDB } from "../db/db"
 
 function readJSON(filePath: string) {
   const absolutePath = path.resolve(process.cwd(), filePath);

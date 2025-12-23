@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug Server A",
+        "type": "node",
+        "request": "attach",
+        "port": 9229,
+        "restart": true,
+        "skipFiles": ["<node_internals>/**"]
+      },
+      {
+        "name": "Debug Server B",
+        "type": "node",
+        "request": "attach",
+        "port": 9230,
+        "restart": true,
+        "skipFiles": ["<node_internals>/**"]
+      }
+    ]
+  }

@@ -1,51 +1,66 @@
 import { Route } from "../models/routes";
-import { PathResult, findAllPaths, evaluatePathWithBountyRules } from "./pathEvaluation";
-import { BountyHunter, indexBountyHunters } from "./bountyHunterService"
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+import { findAllPathsWithinTimeLimit, evaluatePathWithBountyRules } from "./pathEvaluation";
+import { indexBountyHunters } from "./bountyHunterService";
+import { getRoutesDataFromDBFilePath } from "./planetRouteService";
+import { EmpireData } from "../types/empireData.types";
+import { FalconData } from "../types/falconData.types";
+import { PathResult } from "../types/pathResult.types";
 
+/**
+ * Calculates the maximum probability of mission success given the available
+ * routes, Falcon constraints, and Empire (bounty hunter) data.
+ *
+ * The algorithm:
+ * 1. Finds all valid paths from departure to arrival within the Empire countdown.
+ * 2. Indexes bounty hunter locations by planet/day for fast lookup.
+ * 3. Evaluates each path using bounty encounter rules and Falcon autonomy limits.
+ * 4. Tracks and returns the highest achievable success probability.
+ *
+ * @param routes - All available hyperspace routes between planets
+ * @param falconData - Falcon constraints such as departure, arrival, and autonomy
+ * @param empireData - Empire constraints including countdown and bounty hunters
+ *
+ * @returns The highest mission success probability as a percentage (0–100)
+ *
+ * @remarks
+ * - Each bounty hunter encounter reduces success probability
+ *
+ * @example
+ * ```ts
+ * const probability = calculateFinalProbability(
+ *   routes,
+ *   falconData,
+ *   empireData
+ * );
+ *
+ * console.log(probability); // e.g. 87
+ * ```
+ */
+export function calculateFinalProbability (
+    routes: Route[],
+    falconData: FalconData,
+    empireData: EmpireData
+): number {
+    const paths: PathResult[] = findAllPathsWithinTimeLimit(routes, falconData.departure, falconData.arrival, empireData.countdown);
+    const bountyHunters = empireData.bounty_hunters;
+    const bountyIndex = indexBountyHunters(bountyHunters);
 
-interface FalconData {
-    autonomy: number,
-    departure: string,
-    arrival: string,
-    routes_db: string
-}
+    let bestProbability = 0;
 
-interface EmpireData {
-    countdown: number,
-    bounty_hunters: BountyHunter[]
-}
+    for (const p of paths) {
+        const successProbability = evaluatePathWithBountyRules(
+            p.path,
+            falconData.autonomy,
+            empireData.countdown,
+            bountyIndex,
+            routes,
+            bestProbability
+        );
 
-export function getRoutesDataFromDB(falconFilePath: string, dbName: string) : Route[] {
-    const falconDir = path.dirname(
-        path.resolve(process.cwd(), falconFilePath)
-    );
-    const dbPath = path.resolve(
-        falconDir,
-        dbName
-    );
-    if (!fs.existsSync(dbPath)) {
-        throw new Error("DB file does not exist");
+        bestProbability = Math.max(bestProbability, successProbability);
     }
-    // Connect to the database
-    const inputDb = new Database(dbPath, { verbose: console.log });
-  
-    const tables = inputDb.prepare(`SELECT name FROM sqlite_master WHERE type='table';`).all();
-    console.log("Tables in universe.db:", tables);
 
-    // Query a specific table
-    const stmt = inputDb.prepare("SELECT * FROM routes");
-    const rawRows: any[] = stmt.all();
-
-    const routes : Route[] = rawRows.map(row => ({
-        origin: row.origin,       // match your DB column names
-        destination: row.destination,
-        travel_time: row.travel_time
-    }));
-
-    return routes;
+    return bestProbability * 100;
 }
 
 export function calculateOdds (
@@ -53,44 +68,6 @@ export function calculateOdds (
     falconData: FalconData,
     empireData: EmpireData
 ): number {
-    
-    const routes : Route[] = getRoutesDataFromDB(falconFilePath, falconData.routes_db);
-    console.log(routes);
-
+    const routes : Route[] = getRoutesDataFromDBFilePath(falconFilePath, falconData.routes_db);
     return calculateFinalProbability(routes, falconData, empireData);
-}
-
-export function calculateFinalProbability (
-    routes: Route[],
-    falconData: FalconData,
-    empireData: EmpireData
-): number {
-    const paths: PathResult[] = findAllPaths(routes, falconData.departure, falconData.arrival);
-    const bountyHunters = empireData.bounty_hunters;
-    const bountyIndex = indexBountyHunters(bountyHunters);
-    
-
-    let bestProbability = 0;
-
-    for (const p of paths) {
-
-        console.log("current PAth: " + p.path + " - " + p.totalTime);
-        // Don't consider path with total travel time more than encounter
-        if(p.totalTime <= empireData.countdown) {
-        
-            const successProbability = evaluatePathWithBountyRules(
-                p.path,
-                falconData.autonomy,
-                empireData.countdown,
-                bountyIndex,
-                routes
-            );
-        
-            console.log("successProbability" + successProbability);
-
-            bestProbability = Math.max(bestProbability, successProbability);
-        }
-    }
-
-    return bestProbability * 100;
 }

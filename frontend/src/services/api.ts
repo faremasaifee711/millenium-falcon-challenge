@@ -18,6 +18,8 @@ export async function calculateOdds(empireData: EmpireData): Promise<number> {
     }
 
     const data: OddsResponse = await response.json();
+    console.log("data response:" , data);
+    
     return data.odds;
   } catch (error) {
     if (error instanceof Error) {

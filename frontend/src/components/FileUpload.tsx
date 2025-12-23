@@ -1,6 +1,6 @@
-//import { useState } from 'react';
-//import { calculateOdds } from '../api';
-// import type { EmpireData } from '../types';
+import { useState } from 'react';
+import { calculateOdds } from '../services/api';
+import type { EmpireData } from '../types';
 
 interface FileUploadProps {
   onOddsCalculated: (odds: number) => void;
@@ -8,7 +8,7 @@ interface FileUploadProps {
 }
 
 export function FileUpload({ onOddsCalculated, onError }: FileUploadProps) {
-  /**const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,8 +34,13 @@ export function FileUpload({ onOddsCalculated, onError }: FileUploadProps) {
         throw new Error('Invalid empire.json structure');
       }
 
-      const odds = await calculateOdds(empireData);
-      onOddsCalculated(odds);
+      try {
+        const odds = await calculateOdds(empireData);
+        onOddsCalculated(odds);
+      } catch (error) {
+        console.log("Error on file upload " + empireData.countdown);
+      }
+      
     } catch (error) {
       if (error instanceof Error) {
         onError(error.message);
@@ -73,6 +78,6 @@ export function FileUpload({ onOddsCalculated, onError }: FileUploadProps) {
         style={{ display: 'none' }}
       />
     </div>
-  );**/
+  );
 }
 

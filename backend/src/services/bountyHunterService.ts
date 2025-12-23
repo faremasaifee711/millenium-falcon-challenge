@@ -1,7 +1,4 @@
-export interface BountyHunter {
-    planet: string;
-    day: number;
-}
+import { BountyHunter } from "../types/bountyHunter.types";
 
 // This makes lookup O(1).
 export function indexBountyHunters(bountyHunters: BountyHunter[]) {

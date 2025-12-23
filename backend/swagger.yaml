@@ -1,0 +1,45 @@
+paths:
+	/api/odds:
+		post:
+		summary: Calculate odds for winning of Millenium Falcon based on bounty hunter locations
+		requestBody:
+			required: true
+			content:
+			application/json:
+				schema:
+				type: object
+				required:
+					- bounty_hunters
+					- countdown
+				properties:
+					bounty_hunters:
+					type: array
+					description: List of bounty hunter positions by planet and day
+					items:
+						type: object
+						required:
+							- planet
+							- day
+						properties:
+							planet:
+								type: string
+								example: "Hoth"
+							day:
+								type: integer
+								example: 6
+					countdown:
+						type: integer
+						description: Number of days before mission failure
+						example: 4
+		responses:
+			"200":
+			description: Calculated odds response
+			content:
+				application/json:
+				schema:
+					type: object
+					properties:
+						odds:
+							type: number
+							format: integer
+							example: 87
