@@ -1,13 +1,11 @@
 import path from "path";
 import fs from "fs";
 
-export const DATA_DIR = process.env.DATA_DIR || path.resolve(__dirname, "../../../examples/example1");
+// make this optional. default will be current directory of the server. and can be provided to pick data from a specific dir
+export const millenniumFalconConfigPath = process.argv[2] || path.resolve(__dirname, "../../../examples/example1/millennium-falcon.json");
 
 export const paths = {
-  falconJson: path.join(DATA_DIR, "millennium-falcon.json"),
-  empireJson: path.join(DATA_DIR, "empire.json"),
-  db: path.join(DATA_DIR, "universe.db"),
-  answerJson: path.join(DATA_DIR, "answer.json")
+  millenniumFalconJson: path.resolve(process.cwd(), millenniumFalconConfigPath),
 };
 
 // Validate that files exist

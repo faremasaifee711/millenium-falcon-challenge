@@ -1,40 +1,4 @@
-# Backend App (Business logic)
-
-## Route Service
-
-### Usage 
-
-import { getRoutes } from "./services/routeService";
-
-const routes = getRoutes("Tatooine", "Endor");
-console.log(routes);
-
-
-## UniverseService:
-- Reads planets path as nodes from DB
-- buildGraph converts routes into a graph adjacency list.
-- pathExists uses DFS to explore all reachable nodes from start.
-- Returns true if end is found, otherwise false.
-- Works for bi-directional routes because we add edges both ways.
-
-## Rules of travel
-- Autonomy
-    - Falcon has autonomy = N days of fuel
-    - Each travel day consumes 1 fuel
-    - If fuel reaches 0, Falcon must refuel
-    - Refueling:
-        - Takes 1 full day
-        - Resets fuel to autonomy
-        - You stay on the same planet (and may meet bounty hunters)
-- Waiting
-    - Falcon may choose to wait on a planet (costs 1 day, no fuel)
-    - Useful to avoid bounty hunters
-- Bounty Hunters
-    - If Falcon is on a planet on a day where bounty hunters are present:
-        - Probability ×= 0.9
-    - Multiple e ncounters multiply
-- Hard constraints
-    - Arrival at Endor must be <= countdown
+# Odds Frontend App
 
 In this project, we all user to upload bounty hunters data and when the destination planet is going to be destroye. Use this data to calculate odds of winning of Millennium Falcon.
 
@@ -76,14 +40,6 @@ In this project, we all user to upload bounty hunters data and when the destinat
 
 ---
 
-## 🚀 3.AI Usage
-
-### 🧩 Tests setup
-- unit tests
-- integration tests
-
----
-
 ## Commands mvn
 
 Command to build and Run the web app
@@ -99,9 +55,3 @@ npm run build && npm run test
 ```
 
 ---
-
-
-
-TODO:
-- implement logic for waiting, and optimizations on waiting
-    - use memoization to store best probablities for each waiting state.

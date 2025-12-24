@@ -1,7 +1,7 @@
 paths:
 	/api/odds:
 		post:
-		summary: Calculate odds for winning of Millenium Falcon based on bounty hunter locations
+		summary: Calculate odds for winning of Millennium Falcon based on bounty hunter locations
 		requestBody:
 			required: true
 			content:

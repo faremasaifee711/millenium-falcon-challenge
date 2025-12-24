@@ -1,6 +1,14 @@
+/**
+ * Main server entry point.
+ *
+ * - Sets up Express app
+ * - Enables JSON body parsing
+ * - Configures CORS for frontend origin
+ * - Mounts /api/odds routes
+ * - Starts the server on the configured port
+ */
 import express from "express";
 import cors from "cors";
-import { DATA_DIR } from "./config/config";
 import oddsRoutes from "./routes/odds.routes";
 
 
@@ -18,5 +26,4 @@ app.use("/api", oddsRoutes);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Using external data folder: ${DATA_DIR}`);
 });

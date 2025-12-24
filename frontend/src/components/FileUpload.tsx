@@ -38,7 +38,7 @@ export function FileUpload({ onOddsCalculated, onError }: FileUploadProps) {
         const odds = await calculateOdds(empireData);
         onOddsCalculated(odds);
       } catch (error) {
-        console.log("Error on file upload " + empireData.countdown);
+        console.log("Error on file upload ", error);
       }
       
     } catch (error) {

@@ -2,38 +2,36 @@
 
 import fs from "fs";
 import path from "path";
-import { calculateOdds } from "./../services/oddsCalculator";
-import Database from "better-sqlite3";
-import { Route } from "../models/routes";
+import { calculateOdds } from "./../core/bruteForce/oddsCalculator";
 
 function readJSON(filePath: string) {
-  const absolutePath = path.resolve(process.cwd(), filePath);
-  return JSON.parse(fs.readFileSync(absolutePath, "utf-8"));
+	const absolutePath = path.resolve(process.cwd(), filePath);
+	
+	if (!fs.existsSync(absolutePath)) {
+		console.warn(`Warning: config file not found at ${filePath}`);
+	}
+
+	return JSON.parse(fs.readFileSync(absolutePath, "utf-8"));
+  
 }
 
 function main() {
-    let [, , falconPath, empirePath] = process.argv;
-    falconPath = "../examples/" + falconPath;
-    empirePath = "../examples/" + empirePath;
+	let [, , millenniumFalconPath, empirePath] = process.argv;
 
-    if (!falconPath || !empirePath) {
-        console.error(
-        "Usage: give-me-the-odds <millennium-falcon.json> <empire.json>"
-        );
-        process.exit(1);
-    }
+	if (!millenniumFalconPath || !empirePath) {
+		console.error(
+			"Usage: give-me-the-odds <millennium-falcon.json> <empire.json>"
+		);
+		process.exit(1);
+	}
 
-    const falconConfig = readJSON(falconPath);
-    const empireConfig = readJSON(empirePath);
+	const millenniumFalconConfig = readJSON(millenniumFalconPath);
+	const empireConfig = readJSON(empirePath);
 
-    
+	const odds = calculateOdds( millenniumFalconPath, millenniumFalconConfig, empireConfig);
 
-    const odds = calculateOdds( falconPath, falconConfig, empireConfig);
-
-    console.log(falconConfig);
-    console.log(empireConfig);
-    
-    console.log(odds);
+	// print result in the command line
+	console.log(odds * 100);
 }
 
 main();

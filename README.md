@@ -52,7 +52,7 @@ $$ {1 \over 10} + { 9 \over 10^2 } + { 9^2 \over 10^3 } = 0.271 $$
 
 Your mission is to create a web application to compute and display the odds that the Millennium Falcon reaches Endor in time and saves the galaxy.
 
-![Never tell me the odds](https://github.com/dataiku/millenium-falcon-challenge/blob/master/resources/never-tell-me-the-odds.gif)
+![Never tell me the odds](https://github.com/dataiku/millennium-falcon-challenge/blob/master/resources/never-tell-me-the-odds.gif)
 
 Your web application will be composed of a backend (the Millennium Falcon onboard computer), a front-end (C3PO) and a CLI (command-line interface aka R2D2).
 
@@ -230,6 +230,21 @@ or
 - Travel from Hoth to Endor
 
 
+## TODO
+
+- [x] Fix the routes_db field in millennium-falcon.json to be considered as a path rather than just the name of the file. Remove DATA_DIR variable completely
+- [x] Convert backend command into `npm run start:dev millennium-falcon.json` the input millennium-falcon.json can be any path - just file name, or relative - ./millennium-falcon.json or absolute /data/millennium-falcon.json . Should work out of the box with path lib. Default if not provided, should be `millennium-falcon.json`
+- [x] Do sanity checks for server failure - with scenarios like incorrect millennium-falcon.json path, broken json format for millennium-falcon.json , missing fields in millennium-falcon.json , incorrect db path in millennium-falcon.json , corrupt db file in millennium-falcon.json etc.
+- [ ] Create the main integration logical test that reads from a test folder (./examples) and each sub-folder is one test case (name of the sub-folder is the test case name) . Each sub-folder has 4 json files as available in the examples right now. It automatically goes through all sub-folders and runs all the test casees and verifies the output using answer.json
+- [ ] Extend the integration logical test with more test-cases such as `destination-cannot-be-reached` , `bounty-hunters-always-on-all-planets` , etc.
+- [ ] Files related to the logic (oddsCalculator.ts, pathEvaluation.ts, bountyHunterService.ts) should go into a separate folder and not in `services`. It can be called `core`
+- [x] Within `core` move the current logic into a sub-folder called `bruteForce` that exposes `calculateFinalProbability` - a contract that can be used to replace the logic via another sub-folder say `version-2` and so on. 
+- [ ] Already consider fuel based increase in travel time when calculating path duration in days in findAllPathsWithinCountdown . Instead of doing it later in evaluatePathWithBountyRules
+
+## Limitation
+- Cannot upload a very large file (in GBs) via the UI as the API is not supported with file upload but rather parses it and sends the file contents as POST body. 
+- Current logic assumes that a planet will not be revisited while reaching the destination. However there are specific scenarios where a planet may need to be revisited say to avoid a bounty hunter
+
 ## Final note
 There is absolutely no constraint on the technological stack that you might choose to achieve this,
 either in the backend or frontend. Choose whichever you think is best suited for the task.
@@ -240,3 +255,4 @@ By the way, we know you might be going to use AI, and that's a good thing. Howev
 
 
 Have fun!
+
