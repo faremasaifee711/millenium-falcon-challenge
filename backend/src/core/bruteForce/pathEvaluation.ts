@@ -50,47 +50,110 @@ export function calculatePathSuccessProbabilityWithBountyHunters(
     bountyHunterDaysByPlanet: Map<string, Set<number>>,
     travelTimeMap: TravelTimeMap,
     cutoffProbablity: number
-): number {
+  ): number {
     console.log("paths: ", path);
-    
-    let day = 0;
-    let fuelAvailability = autonomy;
-    let totalBountyHunterEncounters = 0;
-    let presentPlanet = path[0];
-
+  
     const isBountyHunterPresent = (planet: string, day: number) =>
-    bountyHunterDaysByPlanet.get(planet)?.has(day) ?? false;
-
-    for (let i = 1; i < path.length; i++) {
-        // Travel based on the routes from the DB
-        const travelTime = getTravelTime(path[i-1]!, path[i], travelTimeMap);
-
-        // if travelTime > autonomy? This path cannot be possible then.
-        if (travelTime > autonomy) return 0;
-        
-        // Refuel is needed
-        if (fuelAvailability === 0 || fuelAvailability < travelTime) {
-            // do complete refill in 1 day
-            day += 1;
-            fuelAvailability = autonomy;
-
-            if (day > countdown) return 0;
-            if (isBountyHunterPresent(presentPlanet, day)) totalBountyHunterEncounters++;
+      bountyHunterDaysByPlanet.get(planet)?.has(day) ?? false;
+  
+    const getTravelTime = (from: string, to: string, tMap: TravelTimeMap): number => {
+      // keep your existing impl / import; this is just a placeholder
+      return tMap.get(from)?.get(to) ?? Infinity;
+    };
+  
+    const memo = new Map<string, number>();
+  
+    const dfs = (
+      pathIndex: number,
+      day: number,
+      fuelAvailability: number,
+      totalBountyHunterEncounters: number
+    ): number => {
+      const presentPlanet = path[pathIndex];
+  
+      // cutoff by countdown and probability threshold
+      const currentProb = Math.pow(0.9, totalBountyHunterEncounters);
+      if (day > countdown || currentProb < cutoffProbablity) {
+        return 0;
+      }
+  
+      // reached destination
+      if (pathIndex === path.length - 1) {
+        return currentProb;
+      }
+  
+      const memoKey = `${pathIndex}|${day}|${fuelAvailability}`;
+      const bestSoFar = memo.get(memoKey);
+      // memo keeps *best probability* reached so far for this state
+      if (bestSoFar !== undefined && bestSoFar >= currentProb) {
+        // already explored this state with equal or better probability
+        return 0;
+      }
+      memo.set(memoKey, currentProb);
+  
+      let bestProbability = 0;
+  
+      const nextPlanet = path[pathIndex + 1]!;
+      const travelTime = getTravelTime(presentPlanet, nextPlanet, travelTimeMap);
+  
+      // if next leg is impossible with full autonomy, whole path is impossible
+      if (travelTime > autonomy) {
+        return 0;
+      }
+  
+      // 1) Option: wait 1 day on current planet (without refueling)
+      {
+        const newDay = day + 1;
+        let newEncounters = totalBountyHunterEncounters;
+        if (isBountyHunterPresent(presentPlanet, newDay)) {
+          newEncounters++;
         }
-
-        day += travelTime;
-        fuelAvailability -= travelTime;
-
-        presentPlanet = path[i];
-
-        if (day > countdown || Math.pow(0.9, totalBountyHunterEncounters) < cutoffProbablity) return 0;
-        if (isBountyHunterPresent(presentPlanet, day)) totalBountyHunterEncounters++;
+        const prob = dfs(pathIndex, newDay, fuelAvailability, newEncounters);
+        if (prob > bestProbability) bestProbability = prob;
+      }
+  
+      // 2) Option: refuel (spend 1 day, set fuelAvailability to autonomy)
+      {
+        const newDay = day + 1;
+        let newEncounters = totalBountyHunterEncounters;
+        if (isBountyHunterPresent(presentPlanet, newDay)) {
+          newEncounters++;
+        }
+        const prob = dfs(pathIndex, newDay, autonomy, newEncounters);
+        if (prob > bestProbability) bestProbability = prob;
+      }
+  
+      // 3) Option: travel to next planet now, if fuelAvailability is enough
+      if (fuelAvailability >= travelTime) {
+        const arrivalDay = day + travelTime;
+        let newEncounters = totalBountyHunterEncounters;
+        if (isBountyHunterPresent(nextPlanet, arrivalDay)) {
+          newEncounters++;
+        }
+        const prob = dfs(
+          pathIndex + 1,
+          arrivalDay,
+          fuelAvailability - travelTime,
+          newEncounters
+        );
+        if (prob > bestProbability) bestProbability = prob;
+      }
+  
+      return bestProbability;
+    };
+  
+    // start state: day 0, full fuel, count encounter on starting planet if any
+    let totalBountyHunterEncounters = 0;
+    const presentPlanet = path[0];
+    if (isBountyHunterPresent(presentPlanet, 0)) {
+      totalBountyHunterEncounters++;
     }
-    console.log("paths encounters ", totalBountyHunterEncounters);
-    
-    // Success probability = (0.9)^k
-    return Math.pow(0.9, totalBountyHunterEncounters);
-}
+  
+    const bestProb = dfs(0, 0, autonomy, totalBountyHunterEncounters);
+    console.log("best probability ", bestProb);
+  
+    return bestProb;
+  }
 
 /**
  * 
