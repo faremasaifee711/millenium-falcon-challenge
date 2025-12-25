@@ -1,6 +1,5 @@
-import { calculateFinalProbability } from "../../core/bruteForce/oddsCalculator";
+import { calculateFinalProbability } from "../../core/oddsCalculator";
 import { EmpireData, MillenniumFalconData } from "../../types/config.types";
-import { PathResult } from "../../types/internal.types";
 import { Route } from "../../types/db.types";
 
 describe("calculateFinalProbability", () => {

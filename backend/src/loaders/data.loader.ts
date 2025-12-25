@@ -1,4 +1,4 @@
-import { getRoutesDataFromDBFilePath } from "../core/planetRouteService";
+import { getRoutesDataFromDBFilePath } from "./planetRouteService";
 import { Route } from "../types/db.types";
 import { MillenniumFalconData } from "../types/config.types";
 import { paths } from "../config/config";
