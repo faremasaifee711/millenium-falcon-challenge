@@ -74,6 +74,10 @@ In this project, we all user to upload bounty hunters data and when the destinat
 ### 🧩 Feature Enhancements
 - add more components
 
+### 🧩 Prioirty Queue
+- Use real priority queue for large graphs:
+import { MinPriorityQueue } from '@datastructures-js/priority-queue';
+
 ---
 
 ## 🚀 3.AI Usage
@@ -81,6 +85,9 @@ In this project, we all user to upload bounty hunters data and when the destinat
 ### 🧩 Tests setup
 - unit tests
 - integration tests
+
+### 🧩 Planning
+Using AI for boilerplate code snippets, syntax checks, or explaining concepts during prep.
 
 ---
 

@@ -2,7 +2,7 @@
 
 import fs from "fs";
 import path from "path";
-import { calculateOdds } from "./../core/bruteForce/oddsCalculator";
+import { calculateOdds } from "../core/optimal/oddsCalculator";
 
 function readJSON(filePath: string) {
 	const absolutePath = path.resolve(process.cwd(), filePath);

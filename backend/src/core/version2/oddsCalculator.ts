@@ -1,5 +1,5 @@
 import { Route } from "../../types/db.types";
-import { findAllPathsWithinCountdown, calculatePathSuccessProbabilityWithBountyHunters } from "../bruteForce/pathEvaluation";
+import { findAllPathsWithinCountdown, calculatePathSuccessProbabilityWithBountyHunters } from "./pathEvaluation";
 import { buildTravelTimeMap } from "../../utils/TravelTimeMapUtil";
 import { getBountyHunterDaysByPlanet } from "../../utils/bountyHunterUtils";
 import { getRoutesDataFromDBFilePath } from "../planetRouteService";

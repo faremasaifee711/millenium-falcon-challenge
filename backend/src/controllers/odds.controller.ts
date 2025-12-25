@@ -1,4 +1,4 @@
-import { calculateFinalProbability } from "../core/bruteForce/oddsCalculator";
+import { calculateFinalProbability } from "../core/optimal/oddsCalculator";
 import { OddsRequest, OddsResponse } from "../types/api.types";
 import { Route } from "../types/db.types";
 import { RequestHandler } from "express";

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { calculateOdds } from "../../core/bruteForce/oddsCalculator";
+import { calculateOdds } from "../../core/optimal/oddsCalculator";
 import { EmpireData, MillenniumFalconData } from "../../types/config.types";
 
 /**
