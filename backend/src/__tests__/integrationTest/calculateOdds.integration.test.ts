@@ -103,7 +103,7 @@ describe("calculateOdds Integration Tests", () => {
         expect(calculatedOdds).toBeCloseTo(expectedOdds, 2);
       });
 
-      it(`should return a valid probability (0-100) for ${testCaseName}`, () => {
+      it(`should return a valid probability (0-1) for ${testCaseName}`, () => {
         const calculatedOdds = calculateOdds(
           millenniumFalconPath,
           millenniumFalconData,
@@ -111,7 +111,7 @@ describe("calculateOdds Integration Tests", () => {
         );
 
         expect(calculatedOdds).toBeGreaterThanOrEqual(0);
-        expect(calculatedOdds).toBeLessThanOrEqual(100);
+        expect(calculatedOdds).toBeLessThanOrEqual(1);
       });
     });
   });

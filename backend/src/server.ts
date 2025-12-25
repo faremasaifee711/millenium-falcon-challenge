@@ -10,7 +10,11 @@
 import express from "express";
 import cors from "cors";
 import oddsRoutes from "./routes/odds.routes";
+import { getCachedRoutes } from "./loaders/data.loader";
 
+// -------------------- INIT --------------------
+
+getCachedRoutes();
 
 // -------------------- EXPRESS SERVER --------------------
 const app = express();

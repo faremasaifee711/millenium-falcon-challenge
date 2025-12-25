@@ -1,6 +1,6 @@
-import { calculateFinalProbability } from "../../core/oddsCalculator";
-import { EmpireData, MillenniumFalconData } from "../../types/config.types";
-import { Route } from "../../types/db.types";
+import { calculateFinalProbability } from "../../../core/oddsCalculator";
+import { EmpireData, MillenniumFalconData } from "../../../types/config.types";
+import { Route } from "../../../types/db.types";
 
 describe("calculateFinalProbability", () => {
     const routes: Route[] = [

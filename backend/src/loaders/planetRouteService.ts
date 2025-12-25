@@ -56,7 +56,7 @@ export function getRoutesDataFromDBFilePath(millenniumFalconFilePath: string, db
         throw new Error("DB file does not exist ---- " + millenniumFalconDir + "-----" + dbName);
     }
     // Connect to the database
-    const inputDb = new Database(dbPath, { verbose: console.log });
+    const inputDb = new Database(dbPath);
   
     return getAllRoutesData(inputDb);
 }

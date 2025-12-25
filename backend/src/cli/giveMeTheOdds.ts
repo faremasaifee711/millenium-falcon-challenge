@@ -15,6 +15,12 @@ function readJSON(filePath: string) {
   
 }
 
+/**
+ * Takes 2 files paths as input respectively the paths toward the:
+ *  - millennium-falcon.json
+ *  - empire.json files 
+ * and prints the probability of success as a number ranging from 0 to 100.
+ */
 function main() {
 	let [, , millenniumFalconPath, empirePath] = process.argv;
 

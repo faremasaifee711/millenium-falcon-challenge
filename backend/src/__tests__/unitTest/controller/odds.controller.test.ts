@@ -1,6 +1,6 @@
 import request from "supertest";
 import express from "express";
-import oddsRoutes from "../../routes/odds.routes";
+import oddsRoutes from "../../../routes/odds.routes";
 
 const app = express();
 app.use(express.json());

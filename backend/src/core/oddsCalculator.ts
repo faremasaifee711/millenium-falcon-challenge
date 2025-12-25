@@ -4,192 +4,140 @@ import { getBountyHunterDaysByPlanet } from "../utils/bountyHunterUtils";
 import { getRoutesDataFromDBFilePath } from "../loaders/planetRouteService";
 import { EmpireData, MillenniumFalconData } from "../types/config.types";
 
+interface State {
+    encounters: number;
+    planetIdx: number;
+    day: number;
+    fuel: number;
+}
+  
+interface PlanetIndexing {
+    planetList: string[];
+    planetIndex: Map<string, number>;
+}
+
 /**
  * Calculates the maximum probability of mission success given the available
- * routes, millennium Falcon constraints, and Empire (bounty hunter) data.
+ * hyperspace routes, Millennium Falcon constraints, and Empire (bounty hunter) data.
  *
- * The algorithm:
- * 1. Finds all valid paths from departure to arrival within the Empire countdown.
- * 2. Indexes bounty hunter locations by planet/day for fast lookup.
- * 3. Evaluates each path using bounty encounter rules and millennium Falcon autonomy limits.
- * 4. Tracks and returns the highest achievable success probability.
+ * The algorithm models the problem as a state-space search where each state is
+ * defined by:
+ *   - current planet
+ *   - current day
+ *   - remaining fuel
+ *   - number of bounty hunter encounters so far
+ *
+ * Using a priority-queue–based search (Dijkstra-style), the algorithm:
+ * 1. Explores reachable states starting from the departure planet at day 0.
+ * 2. Accounts for travel time, refueling delays, and optional waiting on planets.
+ * 3. Tracks bounty hunter encounters by planet and day.
+ * 4. Prunes suboptimal states using memoization to avoid redundant exploration.
+ * 5. Stops when the destination is reached within the Empire countdown.
+ *
+ * The success probability is computed as:
+ *   probability = 0.9 ^ k
+ * where k is the minimum number of bounty hunter encounters along the path.
  *
  * @param routes - All available hyperspace routes between planets
- * @param millenniumFalconData - Falcon constraints such as departure, arrival, and autonomy
- * @param empireData - Empire constraints including countdown and bounty hunters
+ * @param millenniumFalconData - Falcon constraints such as departure, arrival, and fuel autonomy
+ * @param empireData - Empire constraints including countdown and bounty hunter schedules
  *
- * @return Probability in range [0,1]
+ * @returns The highest achievable mission success probability in the range [0, 1]
  *
  * @remarks
- * - Success probability = 0.9^k where k is minimum encounters
- * - If no valid path exists within countdown, returns 0
- * - Waiting on a planet can avoid encounters but consumes time
- *
- * @example
- * ```ts
- * const probability = calculateFinalProbability(
- *   routes,
- *   millenniumFalconData,
- *   empireData
- * );
- *
- * console.log(probability); // e.g. 0.87
- * ```
+ * - Waiting or refueling consumes one day and may trigger bounty hunter encounters.
+ * - Routes that exceed fuel autonomy or countdown constraints are discarded.
+ * - If no valid path exists within the countdown, the function returns 0.
  */
-export function calculateFinalProbability (
+export function calculateFinalProbability(
     routes: Route[],
     millenniumFalconData: MillenniumFalconData,
     empireData: EmpireData
-): number {
-    const { departure , arrival, autonomy } = millenniumFalconData;
+  ): number {
+    const { departure, arrival, autonomy } = millenniumFalconData;
     const { countdown, bounty_hunters } = empireData;
-
+  
     // Build data structures
     const travelTimeMap = buildTravelTimeMap(routes);
-    const bountyHunterDaysByPlanet = getBountyHunterDaysByPlanet(bounty_hunters);
-
-    // Extract all unique planets for indexing
-    const allPlanets = new Set<string>();
-    for (const route of routes) {
-        allPlanets.add(route.origin);
-        allPlanets.add(route.destination);
-    }
-    const planetList: string[] = Array.from(allPlanets);
-    const planetIndex = new Map<string, number>();
-    planetList.forEach((planet, idx) => planetIndex.set(planet, idx));
-
-    const NUM_PLANETS = planetList.length;
-    const MAX_DAY = countdown + 1;
-    const MAX_FUEL = autonomy + 1;
-
-    const isBountyHunterPresent = (planet: string, day: number) =>
-        bountyHunterDaysByPlanet.get(planet)?.has(day) ?? false;
-
+    const bountyMap = getBountyHunterDaysByPlanet(bounty_hunters);
+    const { planetList, planetIndex } = buildPlanetIndex(routes);
+  
     // 3D Memo: memo[planetIdx][day][fuel] = min encounters to reach this state
-    const memo: number[][][] = Array.from({ length: NUM_PLANETS }, 
-        () => Array.from({ length: MAX_DAY }, 
-            () => Array(MAX_FUEL).fill(Infinity)
-        )
+    const memo = initializeMemo(
+      planetList.length,
+      countdown + 1,
+      autonomy + 1
     );
-
-    // Priority queue state: [encounters, planet Index, day, fuel]
-    interface State {
-        encounters: number;
-        planetIdx: number;
-        day: number;
-        fuel: number;
-    }
-
-    const priorityQueue: State[] = [];
-
+  
+    const queue: State[] = [];
+  
     // Start state
     const startPlanetIdx = planetIndex.get(departure)!;
-    const startEncounters = isBountyHunterPresent(departure, 0) ? 1 : 0;
-    
-    priorityQueue.push({ 
-        encounters: startEncounters, 
-        planetIdx: startPlanetIdx, 
-        day: 0, 
-        fuel: autonomy 
+    const startEncounters = isBountyHunterPresent(bountyMap, departure, 0) ? 1 : 0;
+  
+    queue.push({
+      encounters: startEncounters,
+      planetIdx: startPlanetIdx,
+      day: 0,
+      fuel: autonomy,
     });
+  
     memo[startPlanetIdx][0][autonomy] = startEncounters;
-
+  
     let bestProbability = 0;
-
-    while (priorityQueue.length > 0) {
+  
+    while (queue.length > 0) {
         // Extract min encounters
-        priorityQueue.sort((a, b) => a.encounters - b.encounters);
-        const { encounters, planetIdx, day, fuel } = priorityQueue.shift()!;
-
+        queue.sort((a, b) => a.encounters - b.encounters);
+        const state = queue.shift()!;
+    
         // Prune if worse path already found
-        if (encounters > memo[planetIdx][day][fuel]) continue;
-
-        const planet = planetList[planetIdx];
-
-        // Reached destination
+        if (state.encounters > memo[state.planetIdx][state.day][state.fuel]) continue;
+    
+        const planet = planetList[state.planetIdx];
+    
         if (planet === arrival) {
-            const prob = Math.pow(0.9, encounters);
-            bestProbability = Math.max(prob, bestProbability);
+            bestProbability = Math.max(
+            bestProbability,
+            Math.pow(0.9, state.encounters)
+            );
             continue;
         }
-
-        if (day > countdown) continue;
-
+    
         // Action 1: Travel to neighbors
-        const neighbors = travelTimeMap.get(planet);
-        if (neighbors) {
-            for (const [nextPlanet, travelTime] of neighbors.entries()) {
-                // Check if route is possible (travel time <= autonomy)
-                if (travelTime > autonomy) {
-                    continue; // Impossible route
-                }
-
-                let newDay = day;
-                let newFuel = fuel;
-                let newEncounters = encounters;
-
-                // Check if refueling is needed before travel
-                if (newFuel < travelTime) {
-                    // Refuel takes 1 day, then travel takes travelTime days
-                    // Total days needed: 1 (refuel) + travelTime
-                    // Must arrive on or before countdown
-                    newDay += 1;
-                    if (newDay > countdown) continue;
-                    // Check encounter during refuel
-                    if (isBountyHunterPresent(planet, newDay)) newEncounters++;
-                     // Full tank after refuel
-                    newFuel = autonomy;
-                }
-
-                // Travel to next planet
-                newDay += travelTime;
-                // Exceeds countdown (must arrive on or before countdown)
-                if (newDay > countdown) continue; 
-                newFuel -= travelTime;
-                
-                // Check encounter upon arrival
-                const nextPlanetIdx = planetIndex.get(nextPlanet)!;
-                if (isBountyHunterPresent(nextPlanet, newDay)) newEncounters++;
-
-                // Update memo and push if better
-                if (newEncounters < memo[nextPlanetIdx][newDay][newFuel]) {
-                    memo[nextPlanetIdx][newDay][newFuel] = newEncounters;
-                    priorityQueue.push({ 
-                        encounters: newEncounters, 
-                        planetIdx: nextPlanetIdx, 
-                        day: newDay, 
-                        fuel: newFuel 
-                    });
-                }
-            }
-        }
-
+        expandTravelMoves(
+            state,
+            {
+                travelTimeMap,
+                planetList,
+                planetIndex,
+                autonomy,
+                countdown,
+                bountyMap,
+            },
+            memo,
+            queue
+        );
+  
         // Only wait if it doesn't exceed countdown and might be beneficial
         // We limit waiting to avoid infinite loops (max wait up to countdown)
 
-        // Action 2: Wait on current planet (to avoid future bounty hunters) (same fuel level)
-        if (day + 1 <= countdown) {
-            const newDay = day + 1;
-            const newEncounters = encounters + (isBountyHunterPresent(planet, newDay) ? 1 : 0);
-            if (newEncounters < memo[planetIdx][newDay][fuel]) {
-                memo[planetIdx][newDay][fuel] = newEncounters;
-                priorityQueue.push({ encounters: newEncounters, planetIdx, day: newDay, fuel });
-            }
-        }
-
-        // Action 3: Refuel only  (sets fuel to autonomy, regardless of current fuel)
-        if (day + 1 <= countdown && fuel < autonomy) {
-            const newDay = day + 1;
-            const newEncounters = encounters + (isBountyHunterPresent(planet, newDay) ? 1 : 0);
-            if (newEncounters < memo[planetIdx][newDay][autonomy]) {
-                memo[planetIdx][newDay][autonomy] = newEncounters;
-                priorityQueue.push({ encounters: newEncounters, planetIdx, day: newDay, fuel: autonomy });
-            }
-        }
+        // Action 2: Wait on current planet (to avoid future bounty hunters)
+        expandWaitAndRefuel(
+            state,
+            {
+                autonomy,
+                countdown,
+                planetList,
+                bountyMap,
+            },
+            memo,
+            queue
+        );
     }
-
+  
     return bestProbability;
-}
+}  
 
 export function calculateOdds (
     millenniumFalconFilePath: string,
@@ -198,4 +146,148 @@ export function calculateOdds (
 ): number {
     const routes : Route[] = getRoutesDataFromDBFilePath(millenniumFalconFilePath, millenniumFalconData.routes_db);
     return calculateFinalProbability(routes, millenniumFalconData, empireData);
+}
+
+function buildPlanetIndex(routes: Route[]): PlanetIndexing {
+    const allPlanets = new Set<string>();
+  
+    for (const route of routes) {
+        allPlanets.add(route.origin);
+        allPlanets.add(route.destination);
+    }
+  
+    const planetList = Array.from(allPlanets);
+    const planetIndex = new Map<string, number>();
+    planetList.forEach((planet, idx) => planetIndex.set(planet, idx));
+  
+    return { planetList, planetIndex };
+}
+
+function initializeMemo(
+    numPlanets: number,
+    maxDay: number,
+    maxFuel: number
+): number[][][] {
+    return Array.from({ length: numPlanets }, () =>
+        Array.from({ length: maxDay }, () =>
+            Array(maxFuel).fill(Infinity)
+        )
+    );
+}
+
+function isBountyHunterPresent(
+    bountyMap: Map<string, Set<number>>,
+    planet: string,
+    day: number
+): boolean {
+    return bountyMap.get(planet)?.has(day) ?? false;
+}
+
+function tryPushState(
+    queue: State[],
+    memo: number[][][],
+    state: State
+) {
+    const { planetIdx, day, fuel, encounters } = state;
+  
+    if (encounters < memo[planetIdx][day][fuel]) {
+      memo[planetIdx][day][fuel] = encounters;
+      queue.push(state);
+    }
+}
+
+function expandTravelMoves(
+    state: State,
+    params: {
+        travelTimeMap: Map<string, Map<string, number>>;
+        planetList: string[];
+        planetIndex: Map<string, number>;
+        autonomy: number;
+        countdown: number;
+        bountyMap: Map<string, Set<number>>;
+    },
+    memo: number[][][],
+    queue: State[]
+) {
+    const { encounters, planetIdx, day, fuel } = state;
+    const planet = params.planetList[planetIdx];
+    const neighbors = params.travelTimeMap.get(planet);
+
+    if (!neighbors) return;
+
+    for (const [nextPlanet, travelTime] of neighbors.entries()) {
+        if (travelTime > params.autonomy) continue;
+
+        let newDay = day;
+        let newFuel = fuel;
+        let newEncounters = encounters;
+
+        // Refuel if needed
+        if (newFuel < travelTime) {
+            newDay += 1;
+            if (newDay > params.countdown) continue;
+
+            if (isBountyHunterPresent(params.bountyMap, planet, newDay)) {
+                newEncounters++;
+            }
+
+            newFuel = params.autonomy;
+        }
+
+        newDay += travelTime;
+        if (newDay > params.countdown) continue;
+
+        newFuel -= travelTime;
+
+        if (isBountyHunterPresent(params.bountyMap, nextPlanet, newDay)) {
+            newEncounters++;
+        }
+
+        const nextPlanetIdx = params.planetIndex.get(nextPlanet)!;
+
+        tryPushState(queue, memo, {
+            encounters: newEncounters,
+            planetIdx: nextPlanetIdx,
+            day: newDay,
+            fuel: newFuel,
+        });
+    }
+}
+
+function expandWaitAndRefuel(
+    state: State,
+    params: {
+        autonomy: number;
+        countdown: number;
+        planetList: string[];
+        bountyMap: Map<string, Set<number>>;
+    },
+    memo: number[][][],
+    queue: State[]
+) {
+    const { encounters, planetIdx, day, fuel } = state;
+    const planet = params.planetList[planetIdx];
+
+    if (day + 1 > params.countdown) return;
+    
+    const newDay = day + 1;
+    const encounterDelta = isBountyHunterPresent(params.bountyMap, planet, newDay) ? 1 : 0;
+
+    // Wait
+    tryPushState(queue, memo, {
+        encounters: encounters + encounterDelta,
+        planetIdx,
+        day: newDay,
+        fuel,
+    });
+
+    // Refuel
+    if (fuel < params.autonomy) {
+        tryPushState(queue, memo, {
+            encounters: encounters + encounterDelta,
+            planetIdx,
+            day: newDay,
+            fuel: params.autonomy,
+        });
+    }
 }
